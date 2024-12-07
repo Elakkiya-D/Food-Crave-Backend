@@ -27,8 +27,9 @@ router.patch(
   jwtParse,
   MyRestaurantController.updateOrderStatus
 );
-
 router.get("/", jwtCheck, jwtParse, MyRestaurantController.getMyRestaurant);
+
+
 
 router.post(
   "/",
@@ -47,5 +48,6 @@ router.put(
   jwtParse,
   MyRestaurantController.updateMyRestaurant
 );
+
 
 export default router;

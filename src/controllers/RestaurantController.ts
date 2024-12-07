@@ -1,6 +1,36 @@
 import { Request, Response } from "express";
 import Restaurant from "../models/restaurant";
 
+const getNearbyRestaurants = async (req: Request, res: Response) => {
+  try {
+    const { maxDeliveryTime, city } = req.query;
+
+    if (!maxDeliveryTime || isNaN(Number(maxDeliveryTime))) {
+      return res
+        .status(400)
+        .json({ message: "Invalid or missing 'maxDeliveryTime' query parameter" });
+    }
+
+    if (!city) {
+      return res.status(200).json([]); 
+    }
+
+    const cityQuery = { city: { $regex: new RegExp(`^${city}$`, "i") } };
+
+    const nearbyRestaurants = await Restaurant.find({
+      ...cityQuery,
+      estimatedDeliveryTime: { $lte: Number(maxDeliveryTime) },
+    });
+
+    res.status(200).json(nearbyRestaurants);
+  } catch (error) {
+    console.log("Error:", error);
+    res.status(500).json({ message: "Unable to fetch nearby restaurants" });
+  }
+};
+
+
+
 const getRestaurant = async (req: Request, res: Response) => {
   try {
     const restaurantId = req.params.restaurantId;
@@ -88,4 +118,5 @@ const searchRestaurant = async (req: Request, res: Response) => {
 export default {
   getRestaurant,
   searchRestaurant,
+  getNearbyRestaurants,
 };

@@ -15,8 +15,8 @@ const getMyOrders = async (req: Request, res: Response) => {
 
     res.json(orders);
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "something went wrong" });
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
   }
 };
 
@@ -46,7 +46,7 @@ const stripeWebhookHandler = async (req: Request, res: Response) => {
       STRIPE_ENDPOINT_SECRET
     );
   } catch (error: any) {
-    console.log(error);
+    console.error(error);
     return res.status(400).send(`Webhook error: ${error.message}`);
   }
 
@@ -96,18 +96,19 @@ const createCheckoutSession = async (req: Request, res: Response) => {
       lineItems,
       newOrder._id.toString(),
       restaurant.deliveryPrice,
-      restaurant._id.toString()
+      restaurant._id.toString(),
+      checkoutSessionRequest.deliveryDetails
     );
 
     if (!session.url) {
-      return res.status(500).json({ message: "Error creating stripe session" });
+      return res.status(500).json({ message: "Error creating Stripe session" });
     }
 
     await newOrder.save();
     res.json({ url: session.url });
   } catch (error: any) {
-    console.log(error);
-    res.status(500).json({ message: error.raw.message });
+    console.error(error);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -126,7 +127,7 @@ const createLineItems = (
 
     const line_item: Stripe.Checkout.SessionCreateParams.LineItem = {
       price_data: {
-        currency: "gbp",
+        currency: "inr",
         unit_amount: menuItem.price,
         product_data: {
           name: menuItem.name,
@@ -145,7 +146,13 @@ const createSession = async (
   lineItems: Stripe.Checkout.SessionCreateParams.LineItem[],
   orderId: string,
   deliveryPrice: number,
-  restaurantId: string
+  restaurantId: string,
+  deliveryDetails: {
+    email: string;
+    name: string;
+    addressLine1: string;
+    city: string;
+  }
 ) => {
   const sessionData = await STRIPE.checkout.sessions.create({
     line_items: lineItems,
@@ -156,7 +163,7 @@ const createSession = async (
           type: "fixed_amount",
           fixed_amount: {
             amount: deliveryPrice,
-            currency: "gbp",
+            currency: "inr",
           },
         },
       },
@@ -166,12 +173,17 @@ const createSession = async (
       orderId,
       restaurantId,
     },
-    success_url: `${FRONTEND_URL}/order-status?success=true`,
+    customer_email: deliveryDetails.email,
+    shipping_address_collection: {
+      allowed_countries: ["IN"],
+    },
+    success_url: `${FRONTEND_URL}/`,
     cancel_url: `${FRONTEND_URL}/detail/${restaurantId}?cancelled=true`,
   });
 
   return sessionData;
 };
+
 
 export default {
   getMyOrders,
