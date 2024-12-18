@@ -23,6 +23,13 @@ const restaurantSchema = new mongoose.Schema({
   menuItems: [menuItemSchema],
   imageUrl: { type: String, required: true },
   lastUpdated: { type: Date, required: true },
+  starRating: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 5,
+    default: 0,
+  },
 });
 
 const Restaurant = mongoose.model("Restaurant", restaurantSchema);
